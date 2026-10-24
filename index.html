@@ -725,6 +725,88 @@ window.addEventListener('error', function(e){
  document.querySelectorAll('[data-market-item]').forEach(b=>b.addEventListener('click',()=>setTimeout(render,50)));document.getElementById('loginAccount')?.addEventListener('click',()=>setTimeout(render,100));document.getElementById('registerAccount')?.addEventListener('click',()=>setTimeout(render,100));document.getElementById('logoutAccount')?.addEventListener('click',()=>setTimeout(render,50));render();
 })();
 </script>
+<!-- UZAY SAVASI X - CEVRIM ICI DUYURULAR -->
+<div id="onlineAnnouncements" style="
+  position:fixed;left:10px;right:10px;top:10px;z-index:99999;
+  max-width:500px;margin:auto;padding:12px;
+  background:#10152c;color:white;border:2px solid #5de0ff;
+  border-radius:12px;font-family:Arial,sans-serif;
+  box-shadow:0 0 18px #00bfff;">
+  <div style="font-size:18px;font-weight:bold">📢 Uzay Savaşı X — Duyurular</div>
+  <div id="announcementList" style="margin-top:8px">Duyurular yükleniyor...</div>
+  <button onclick="document.getElementById('onlineAnnouncements').style.display='none'"
+    style="margin-top:8px;padding:7px 12px;border:0;border-radius:6px">
+    Kapat
+  </button>
+</div>
+  
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(async function () {
+  const SUPABASE_URL = "https://czpruocyslaonzdfwlus.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_zSK7dhxXjORYl7hMAMrnuA_M1GT1fOl";
+
+  const list = document.getElementById("announcementList");
+
+  try {
+    const client = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+    async function loadAnnouncements() {
+      const { data, error } = await client
+        .from("game_announcements")
+        .select("id, message, created_at")
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      list.replaceChildren();
+
+      if (!data || data.length === 0) {
+        list.textContent = "Henüz duyuru yok.";
+        return;
+      }
+
+      data.forEach(function (item) {
+        const entry = document.createElement("div");
+        entry.style.cssText =
+          "padding:8px;margin-top:6px;background:#202947;border-radius:7px";
+
+        const message = document.createElement("div");
+        message.textContent = item.message;
+
+        const date = document.createElement("small");
+        date.textContent = new Date(item.created_at).toLocaleString("tr-TR");
+
+        entry.append(message, date);
+        list.appendChild(entry);
+      });
+    }
+
+    await loadAnnouncements();
+
+    client
+      .channel("game-announcements-live")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "game_announcements"
+        },
+        loadAnnouncements
+      )
+      .subscribe();
+
+  } catch (error) {
+    console.error("Duyuru hatası:", error);
+    list.textContent = "Duyurular yüklenemedi. Bağlantıyı kontrol et.";
+  }
+})();
+</script>
 
 </body>
 </html>

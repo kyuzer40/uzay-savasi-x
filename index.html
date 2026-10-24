@@ -808,5 +808,91 @@ window.addEventListener('error', function(e){
 })();
 </script>
 
+<div id="adminPanel" style="position:fixed;bottom:10px;right:10px;z-index:100000;background:#10152c;color:white;padding:12px;border:1px solid #5de0ff;border-radius:10px;font-family:Arial;max-width:300px">
+  <button id="adminToggle" style="padding:8px">🔐 Admin girişi</button>
+  <div id="adminForm" style="display:none;margin-top:10px">
+    <input id="adminEmail" type="email" placeholder="Admin e-posta" style="display:block;width:95%;padding:8px;margin:5px 0">
+    <input id="adminPassword" type="password" placeholder="Şifre" style="display:block;width:95%;padding:8px;margin:5px 0">
+    <button id="adminLogin" style="padding:8px">Giriş yap</button>
+    <div id="adminMessage" style="margin-top:8px"></div>
+    <div id="adminComposer" style="display:none;margin-top:10px">
+      <textarea id="adminText" placeholder="Duyuru mesajı..." style="width:95%;height:70px"></textarea>
+      <button id="adminSend" style="padding:8px">📢 Duyuruyu gönder</button>
+      <button id="adminLogout" style="padding:8px">Çıkış</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const toggle = document.getElementById("adminToggle");
+  const form = document.getElementById("adminForm");
+  const message = document.getElementById("adminMessage");
+  const composer = document.getElementById("adminComposer");
+
+  if (!window.supabase) {
+    message.textContent = "Supabase bağlantı kütüphanesi yüklenemedi.";
+    return;
+  }
+
+  const client = window.supabase.createClient(
+    "https://czpruocyslaonzdfwlus.supabase.co",
+    "sb_publishable_zSK7dhxXjORYl7hMAMrnuA_M1GT1fOl"
+  );
+
+  toggle.onclick = () => {
+    form.style.display = form.style.display === "none" ? "block" : "none";
+  };
+
+  document.getElementById("adminLogin").onclick = async () => {
+    message.textContent = "Giriş yapılıyor...";
+
+    const email = document.getElementById("adminEmail").value.trim();
+    const password = document.getElementById("adminPassword").value;
+
+    const { error } = await client.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      message.textContent = "Giriş başarısız. E-posta ve şifreyi kontrol et.";
+      return;
+    }
+
+    message.textContent = "Admin hesabıyla giriş yapıldı!";
+    composer.style.display = "block";
+  };
+
+  document.getElementById("adminSend").onclick = async () => {
+    const text = document.getElementById("adminText").value.trim();
+    if (!text) {
+      message.textContent = "Önce duyuru yaz.";
+      return;
+    }
+
+    message.textContent = "Gönderiliyor...";
+
+    const { error } = await client
+      .from("game_announcements")
+      .insert({ message: text });
+
+    if (error) {
+      message.textContent = "Gönderilemedi. Yetki ayarlarını kontrol et.";
+      return;
+    }
+
+    document.getElementById("adminText").value = "";
+    message.textContent = "Duyuru gönderildi!";
+  };
+
+  document.getElementById("adminLogout").onclick = async () => {
+    await client.auth.signOut();
+    composer.style.display = "none";
+    message.textContent = "Çıkış yapıldı.";
+  };
+})();
+</script>
+
 </body>
 </html>
